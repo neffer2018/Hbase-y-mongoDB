@@ -1,0 +1,162 @@
+Diseño de la Base de Datos en MongoDB
+Caso de uso seleccionado:
+Catálogo de Productos de una Tienda de Electrónica
+MongoDB es ideal para catálogos de productos debido a su capacidad para manejar datos no estructurados, jerárquicos y diversos.
+
+
+Ejemplo de un documento en products:
+
+json
+
+{
+    "_id": ObjectId("64c0f9f2e5c123"),
+    "name": "Laptop Pro 15",
+    "category": "Laptop",
+    "price": 1200.99,
+    "stock": 25,
+    "specifications": {
+        "processor": "Intel Core i7",
+        "ram": "16GB",
+        "storage": "512GB SSD",
+        "os": "Windows 11"
+    },
+    "brand": "TechBrand",
+    "rating": 4.5,
+    "reviews": [
+        {
+            "user": "JohnDoe123",
+            "comment": "Excelente rendimiento.",
+            "rating": 5,
+            "date": "2024-11-10"
+        },
+        {
+            "user": "JaneSmith",
+            "comment": "Buena relación calidad-precio.",
+            "rating": 4,
+            "date": "2024-11-12"
+        }
+    ]
+}
+
+
+
+Utilizamos MongoDB para crear la base de datos y la colección products:
+
+from pymongo import MongoClient
+import random
+
+# Conectar a MongoDB
+client = MongoClient('localhost', 27017)
+db = client['electronic_store']  # Crear base de datos
+collection = db['products']      # Crear colección
+
+# Borrar datos previos (si los hay)
+collection.drop()
+print("Base de datos creada y colección reiniciada.")
+
+# Insertar datos de prueba
+categories = ["Laptop", "Smartphone", "Cámara", "Tablet", "Accesorios"]
+brands = ["TechBrand", "GadgetPro", "PhotoZoom", "MobileMaster"]
+reviews_sample = [
+    {"user": "User1", "comment": "Muy buen producto.", "rating": 4, "date": "2024-11-10"},
+    {"user": "User2", "comment": "Cumple con lo esperado.", "rating": 5, "date": "2024-11-11"}
+]
+
+# Generar datos de prueba
+products = []
+for i in range(100):
+    product = {
+        "name": f"Producto {i+1}",
+        "category": random.choice(categories),
+        "price": round(random.uniform(50, 1500), 2),
+        "stock": random.randint(0, 100),
+        "specifications": {
+            "feature1": f"Valor{i}",
+            "feature2": f"Detalle{i}"
+        },
+        "brand": random.choice(brands),
+        "rating": round(random.uniform(3.0, 5.0), 1),
+        "reviews": random.sample(reviews_sample, random.randint(0, 2))
+    }
+    products.append(product)
+
+# Insertar datos en MongoDB
+collection.insert_many(products)
+print(f"Se insertaron {len(products)} productos de prueba.")
+
+
+Consultas en MongoDB
+2.1 Consultas Básicas
+a. Insertar un documento nuevo:
+
+new_product = {
+    "name": "Cámara X1",
+    "category": "Cámara",
+    "price": 599.99,
+    "stock": 10,
+    "specifications": {"resolution": "20MP", "zoom": "10x"},
+    "brand": "PhotoZoom",
+    "rating": 4.8,
+    "reviews": []
+}
+collection.insert_one(new_product)
+print("Producto insertado correctamente.")
+
+
+b. Consultar todos los documentos:
+
+for product in collection.find().limit(5):  # Mostrar los primeros 5
+    print(product)
+
+
+c. Actualizar el stock de un producto:
+collection.update_one({"name": "Cámara X1"}, {"$set": {"stock": 15}})
+print("Stock actualizado.")
+
+
+d.. Eliminar productos sin stock:
+result = collection.delete_many({"stock": 0})
+print(f"Productos eliminados: {result.deleted_count}")
+
+
+Consultas con Filtros y Operadores
+a. Productos con precio menor a $500:
+
+cheap_products = collection.find({"price": {"$lt": 500}})
+for product in cheap_products:
+    print(product)
+
+
+b. Buscar productos por categoría y marca:
+category_brand = collection.find({"category": "Laptop", "brand": "TechBrand"})
+for product in category_brand:
+    print(product)
+
+
+
+
+Consultas de Agregación
+a. Contar productos por categoría:
+category_count = collection.aggregate([
+    {"$group": {"_id": "$category", "count": {"$sum": 1}}}
+])
+for category in category_count:
+    print(category)
+
+
+b. Precio promedio por categoría:
+
+avg_price = collection.aggregate([
+    {"$group": {"_id": "$category", "avg_price": {"$avg": "$price"}}}
+])
+for category in avg_price:
+    print(category)
+
+
+c. Producto con mayor calificación:
+
+top_rated = collection.find().sort("rating", -1).limit(1)
+for product in top_rated:
+    print(product)
+
+
